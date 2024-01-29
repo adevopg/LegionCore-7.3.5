@@ -996,6 +996,66 @@ void OnUpdate(Player* player, uint32 diff) override
 }
 };
 
+class player_quest_42787 : public PlayerScript
+{
+public:
+    player_quest_42787() : PlayerScript("player_quest_42787") {}
+
+    void OnUpdate(Player* player, uint32 diff) override
+    {
+
+        if (player->GetQuestStatus(42787) == QUEST_STATUS_INCOMPLETE)
+        {
+
+            if (Creature* creature = player->FindNearestCreature(97543, 40.0f, true))
+            {
+                if (!creature->HasAura(197784))
+                {
+                    player->SummonCreature(100495, 5023.47f, -3843.12f, 736.924f, 3.2582f, TEMPSUMMON_DEAD_DESPAWN, 60000);
+                }
+
+            }
+        }
+
+    }
+};
+
+class quest_silithius_110 : public PlayerScript
+{
+public:
+    quest_silithius_110() : PlayerScript("quest_silithius_110") {}
+
+
+    void OnUpdate(Player * player, uint32 diff) override
+    {
+        if ((player->GetQuestStatus(49982) == QUEST_STATUS_INCOMPLETE) || (player->GetQuestStatus(49982) == QUEST_STATUS_COMPLETE) || (player->GetQuestStatus(49981) == QUEST_STATUS_COMPLETE) || (player->GetQuestStatus(49981) == QUEST_STATUS_INCOMPLETE) || (player->GetQuestStatus(49981) == QUEST_STATUS_REWARDED) || (player->GetQuestStatus(49982) == QUEST_STATUS_REWARDED))
+        {
+            if (!player->HasAura(255152))
+            {
+                if (player->GetMapId() == 1 && player->GetCurrentZoneID() == 1377)
+                {
+                    player->TeleportTo(1817, -6467.526f, -219.9097f, 5.90872f, 2.209932f);
+
+                }
+            }
+        }
+        if ((player->GetQuestStatus(50056) == QUEST_STATUS_COMPLETE))
+            if (player->GetTeam() == ALLIANCE)
+                    if (player->GetDistance(-7536.31f, 1774.1f, 1062.08f) >= 20.0f)
+                    {
+                        player->TeleportTo(1817, -7536.31f, 1774.1f, 1062.08f, 2.161f);
+
+                    }
+        if ((player->GetQuestStatus(50300) == QUEST_STATUS_COMPLETE))
+            if (player->GetTeam() == HORDE)
+                if (player->GetDistance(-7544.08f, 1778.5f, 1007.86f) >= 20.0f)
+                {
+                    player->TeleportTo(1817, -7544.08f, 1778.5f, 1007.86f, 5.383f);
+
+                }
+    }
+};
+
 
 class player_invisible_status_mod_map_handler : public PlayerScript
 {
@@ -1041,6 +1101,8 @@ void AddSC_player_special_scripts()
 {
     new playerScriptPvpMisc();
     new playerScriptCheckArts();
+    new quest_silithius_110();
+    new player_quest_42787();
     new player_learn_warforge();
     //new System_Flood_And_RSP();
     new player_teleport_windikar();
