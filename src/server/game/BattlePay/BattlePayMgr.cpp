@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
 * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
 *
@@ -340,6 +340,36 @@ auto BattlepayManager::ProductFilter(Product product) -> bool
     return true;
 };
 
+void BattlepayManager::OnPaymentSucess(uint32 p_AccountId, uint32 p_NewBalance)
+{
+    SessionMap const& l_Sessions = sWorld->GetAllSessions();
+    auto l_SessionItr = l_Sessions.find(p_AccountId);
+
+    if (l_SessionItr != l_Sessions.end())
+    {
+        WorldSessionPtr l_SessionPtr = l_SessionItr->second;
+        WorldSession* l_Session = l_SessionPtr.get(); // Obtiene el puntero crudo
+
+        if (l_Session == nullptr)
+            return;
+
+        Player* l_Player = l_Session->GetPlayer();
+
+        if (l_Player == nullptr)
+            return;
+
+        std::ostringstream l_Data;
+        l_Data << p_NewBalance;
+        l_Player->SendCustomMessage(
+            Battlepay::CustomMessage::GetCustomMessage(Battlepay::CustomMessage::NovaStoreBalance),
+            l_Data
+        );
+    }
+}
+
+
+
+
 void BattlepayManager::SendProductList()
 {
     WorldPackets::BattlePay::ProductListResponse response;
@@ -599,21 +629,53 @@ std::tuple<bool, WorldPackets::BattlePay::ProductDisplayInfo> BattlepayManager::
     return std::make_tuple(true, info);
 }
 
-void BattlepayManager::SendPointsBalance()
+
+
+
+void BattlepayManager::SendPointsBalance(WorldSession* p_Session)
 {
+    if (!(p_Session->GetBattlePayMgr()->IsAvailable()))
+        return;
+
     ChatHandler chatHandler(_session);
     if (!_session->GetPlayer())
         return;
 
-    chatHandler.PSendSysMessage("Account name: %s", _session->GetAccountName());
+    uint32 l_SessionId = p_Session->GetAccountId();
+
+    WorldSessionPtr l_Session = sWorld->FindSession(l_SessionId);
+    if (l_Session == nullptr)
+        return;
+
+    Player* l_Player = l_Session->GetPlayer();
+    if (l_Player == nullptr)
+        return;
+
+    // Enviar el mensaje del ID de cuenta
+    std::ostringstream accountMsg;
+    accountMsg << p_Session->GetAccountId();
+    l_Player->SendCustomMessage(GetCustomMessage(CustomMessage::NovaAccountId), accountMsg);
+
+    // Construir y enviar el mensaje del balance de la tienda
+    std::ostringstream storeBalanceMsg;
 
     for (auto& tokenType : sBattlePayDataStore->GetTokenTypes())
     {
         int64 balance = _session->GetTokenBalance(tokenType.first);
         if (balance || tokenType.second.listIfNone)
-            chatHandler.PSendSysMessage("%s: %d", tokenType.second.name, balance);
+        {
+            // Concatenar nombre del tipo de token y balance
+            storeBalanceMsg << tokenType.second.name << ": " << balance << "|";
+        }
     }
+
+    // Enviar el mensaje del balance de la tienda completa
+    l_Player->SendCustomMessage(GetCustomMessage(CustomMessage::NovaStoreBalance), storeBalanceMsg);
 }
+
+
+
+
 
 void BattlepayManager::SendBattlePayDistribution(uint32 productId, uint8 status, uint64 distributionId, ObjectGuid targetGuid)
 {

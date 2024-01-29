@@ -56,7 +56,7 @@ namespace cds { namespace container {
             {
                 void operator ()( value_type* data )
                 {
-                    cxx_data_allocator().Delete( data );
+                    cxx_data_allocator().Delete( data, 1 );
                 }
             };
 

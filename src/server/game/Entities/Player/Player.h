@@ -2022,7 +2022,7 @@ class Player : public Unit, public GridObject<Player>
         void SendQuestReward(Quest const* quest, uint32 XP, Object* questGiver, int32 moneyReward, Item* item, bool hideChatMessage);
         void SendQuestFailed(uint32 questId, InventoryResult reason = EQUIP_ERR_OK);
         void SendQuestTimerFailed(uint32 quest_id);
-        void SendCanTakeQuestResponse(uint32 msg, Quest const* qInfo, std::string = "none") const;
+        void SendCanTakeQuestResponse(uint32 msg, Quest const* qInfo, std::string = "") const;
         void SendQuestConfirmAccept(Quest const* quest, Player* pReceiver);
         void SendPushToPartyResponse(Player* player, uint8 msg);
         void SendQuestUpdateAddCredit(Quest const* quest, ObjectGuid guid, QuestObjective const& obj, uint16 count);
@@ -2791,6 +2791,7 @@ class Player : public Unit, public GridObject<Player>
         bool CanUseBattlegroundObject();
         bool isTotalImmune();
         bool CanCaptureTowerPoint();
+        bool m_IsDebugQuestLogs;
 
         bool HasWinToday(uint8 type) { return _hasWinToday[type]; }
         void SetWinToday(bool isWinner, uint8 type = 0, bool all = true);
@@ -3392,6 +3393,7 @@ class Player : public Unit, public GridObject<Player>
         void _SaveBGData(SQLTransaction& trans);
         void _SaveGlyphs(SQLTransaction& trans);
         void _SaveTalents(SQLTransaction& trans);
+        void _SaveStats(SQLTransaction& trans) const;
         void _SaveCurrency(SQLTransaction& trans);
         void _SaveBrackets(SQLTransaction& trans);
         void _SaveCUFProfiles(SQLTransaction& trans);

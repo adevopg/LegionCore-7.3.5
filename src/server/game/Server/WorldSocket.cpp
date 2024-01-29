@@ -938,7 +938,7 @@ void WorldSocket::HandleAuthSessionCallback(std::shared_ptr<WorldPackets::Auth::
                 ss << (fields[1].GetString().empty() ? "Antiflood unknwn" :  fields[1].GetCString()) << "*";
                 if (sWorld->getBoolConfig(CONFIG_ANTI_FLOOD_HWID_BANS_ALLOW))
                 {
-                    sWorld->BanAccount(BAN_ACCOUNT, _worldSession->GetAccountName(), "-1", ss.str(), "Server");
+                    sWorld->BanAccount(BAN_ACCOUNT, _worldSession->GetAccountName(), nullptr, "-1", ss.str(), "Server");
                     SendAuthResponseError(ERROR_GAME_ACCOUNT_BANNED);
                     DelayedCloseSocket();
                     return;

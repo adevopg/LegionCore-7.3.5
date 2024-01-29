@@ -103,6 +103,7 @@ enum WorldBoolConfigs
     CONFIG_ALLOW_PLAYER_COMMANDS,
     CONFIG_CLEAN_CHARACTER_DB,
     CONFIG_GRID_UNLOAD,
+    CONFIG_STATS_SAVE_ONLY_ON_LOGOUT,
     CONFIG_ALLOW_TWO_SIDE_ACCOUNTS,
     CONFIG_ALLOW_TWO_SIDE_INTERACTION_CALENDAR,
     CONFIG_ALLOW_TWO_SIDE_INTERACTION_CHAT,
@@ -388,6 +389,7 @@ enum WorldIntConfigs
     CONFIG_GUILD_EVENT_LOG_COUNT,
     CONFIG_GUILD_NEWS_LOG_COUNT,
     CONFIG_GUILD_BANK_EVENT_LOG_COUNT,
+    CONFIG_MIN_LEVEL_STAT_SAVE,
     CONFIG_RANDOM_BG_RESET_HOUR,
     CONFIG_CHARDELETE_KEEP_DAYS,
     CONFIG_CHARDELETE_METHOD,
@@ -820,7 +822,7 @@ class World
 
         void KickAll();
         void KickAllLess(AccountTypes sec);
-        BanReturn BanAccount(BanMode mode, std::string nameOrIP, std::string duration, std::string reason, std::string author, bool queued = false);
+        BanReturn BanAccount(BanMode mode, std::string nameOrIP, std::string macAddress, std::string duration, std::string reason, std::string author, bool queued = false);
         bool RemoveBanAccount(BanMode mode, std::string nameOrIP);
         BanReturn BanCharacter(std::string name, std::string duration, std::string reason, std::string author);
         bool RemoveBanCharacter(std::string name);

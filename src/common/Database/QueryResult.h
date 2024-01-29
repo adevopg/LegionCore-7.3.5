@@ -34,12 +34,15 @@ public:
     ~ResultSet();
 
     bool NextRow();
-    uint64 GetRowCount() const;
-    uint32 GetFieldCount() const;
+    uint64 GetRowCount() const { return _rowCount; }
+    uint32 GetFieldCount() const { return _fieldCount; }
 
-    Field* Fetch() const;
-
-    const Field& operator [](uint32 index) const;
+    Field* Fetch() const { return _currentRow; }
+    const Field& operator [] (uint32 index) const
+    {
+        ASSERT(index < _fieldCount);
+        return _currentRow[index];
+    }
 
 protected:
     uint64 _rowCount;
@@ -50,7 +53,6 @@ private:
     void CleanUp();
     MYSQL_RES* _result;
     MYSQL_FIELD* _fields;
-
     ResultSet(ResultSet const& right) = delete;
     ResultSet& operator=(ResultSet const& right) = delete;
 };
@@ -62,10 +64,21 @@ public:
     ~PreparedResultSet();
 
     bool NextRow();
-    uint64 GetRowCount() const;
-    uint32 GetFieldCount() const;
-    Field* Fetch() const;
-    const Field& operator [](uint32 index) const;
+    uint64 GetRowCount() const { return m_rowCount; }
+    uint32 GetFieldCount() const { return m_fieldCount; }
+
+    Field* Fetch() const
+    {
+        ASSERT(m_rowPosition < m_rowCount);
+        return m_rows[uint32(m_rowPosition)];
+    }
+
+    const Field& operator [] (uint32 index) const
+    {
+        ASSERT(m_rowPosition < m_rowCount);
+        ASSERT(index < m_fieldCount);
+        return m_rows[uint32(m_rowPosition)][index];
+    }
 
 protected:
     std::vector<Field*> m_rows;
@@ -78,13 +91,12 @@ private:
     MYSQL_STMT* m_stmt;
     MYSQL_RES* m_res;
 
-    my_bool* m_isNull;
+    bool* m_isNull;
     unsigned long* m_length;
 
     void FreeBindBuffer();
     void CleanUp();
     bool _NextRow();
-
     PreparedResultSet(PreparedResultSet const& right) = delete;
     PreparedResultSet& operator=(PreparedResultSet const& right) = delete;
 };

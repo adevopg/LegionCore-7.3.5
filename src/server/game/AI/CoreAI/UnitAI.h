@@ -260,8 +260,8 @@ class UnitAI
 
         virtual void sOnActivateTaxiPathTo(Player* /*player*/, uint32 /*patchid*/) { }
 
-        void AddDelayedEvent(Minutes delayTime, std::function<void()> && function);
-        void AddDelayedEvent(Seconds delayTime, std::function<void()> && function);
+            void AddDelayedEvent(Minutes delayTime, std::function<void()> && function);
+            void AddDelayedEvent(Seconds delayTime, std::function<void()> && function);
         void KillAllDelayedEvents();
 };
 

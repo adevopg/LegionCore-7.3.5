@@ -1,3 +1,4 @@
+SET sql_mode = 'STRICT_TRANS_TABLES';
 ALTER TABLE `account`
 	CHANGE COLUMN `username` `username` VARCHAR(255) NOT NULL DEFAULT '' AFTER `id`,
 	CHANGE COLUMN `sha_pass_hash` `sha_pass_hash` VARCHAR(512) NOT NULL DEFAULT '' AFTER `username`,

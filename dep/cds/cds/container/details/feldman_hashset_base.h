@@ -210,7 +210,7 @@ namespace cds { namespace container {
             {
                 void operator()( value_type * p ) const
                 {
-                    cxx_node_allocator().Delete( p );
+                    cxx_node_allocator().Delete( p, 1 );
                 }
             };
 

@@ -717,7 +717,7 @@ bool PlayerCheatData::HandleAnticheatTests(MovementInfo& movementInfo, WorldSess
             // ban for GM Island
             if (me->GetSession()->GetSecurity() == SEC_PLAYER && destZoneId == 876 && destAreaId == 876)
             {
-                sWorld->BanAccount(BAN_ACCOUNT, me->GetSession()->GetPlayerName(), nullptr, "Infiltration on GM Island", "Warden AntiCheat");
+                sWorld->BanAccount(BAN_ACCOUNT, me->GetSession()->GetPlayerName(), nullptr, nullptr, "Infiltration on GM Island", "Warden AntiCheat");
                 return false;
             }
 
@@ -1089,7 +1089,7 @@ bool PlayerCheatData::HandleCustomAnticheatTests(uint32 opcode, MovementInfo& mo
             // ban for GM Island
             if (me->GetSession()->GetSecurity() == SEC_PLAYER && destZoneId == 876 && destAreaId == 876)
             {
-                sWorld->BanAccount(BAN_ACCOUNT, me->GetSession()->GetPlayerName(), nullptr, "Infiltration on GM Island", "Warden AntiCheat");
+                sWorld->BanAccount(BAN_ACCOUNT, me->GetSession()->GetPlayerName(), nullptr, nullptr, "Infiltration on GM Island", "Warden AntiCheat");
                 return false;
             }
 

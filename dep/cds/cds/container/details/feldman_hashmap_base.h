@@ -370,7 +370,7 @@ namespace cds { namespace container {
             {
                 void operator()( node_type * p ) const
                 {
-                    cxx_node_allocator().Delete( p );
+                    cxx_node_allocator().Delete( p, 1 );
                 }
             };
 

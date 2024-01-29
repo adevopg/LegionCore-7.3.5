@@ -684,6 +684,14 @@ void World::LoadConfigSettings(bool reload)
     m_bool_configs[CONFIG_GRID_UNLOAD] = sConfigMgr->GetBoolDefault("GridUnload", true);
     m_int_configs[CONFIG_INTERVAL_SAVE] = sConfigMgr->GetIntDefault("PlayerSaveInterval", 15 * MINUTE * IN_MILLISECONDS);
     m_int_configs[CONFIG_INTERVAL_DISCONNECT_TOLERANCE] = sConfigMgr->GetIntDefault("DisconnectToleranceInterval", 0);
+    m_bool_configs[CONFIG_STATS_SAVE_ONLY_ON_LOGOUT] = sConfigMgr->GetBoolDefault("PlayerSave.Stats.SaveOnlyOnLogout", true);
+
+    m_int_configs[CONFIG_MIN_LEVEL_STAT_SAVE] = sConfigMgr->GetIntDefault("PlayerSave.Stats.MinLevel", 0);
+    if (m_int_configs[CONFIG_MIN_LEVEL_STAT_SAVE] > MAX_LEVEL)
+    {
+        TC_LOG_ERROR(LOG_FILTER_SERVER_LOADING, "PlayerSave.Stats.MinLevel (%i) must be in range 0..80. Using default, do not save character stats (0).", m_int_configs[CONFIG_MIN_LEVEL_STAT_SAVE]);
+        m_int_configs[CONFIG_MIN_LEVEL_STAT_SAVE] = 0;
+    }
 
     m_int_configs[CONFIG_INTERVAL_GRIDCLEAN] = sConfigMgr->GetIntDefault("GridCleanUpDelay", 5 * MINUTE * IN_MILLISECONDS);
     if (m_int_configs[CONFIG_INTERVAL_GRIDCLEAN] < MIN_GRID_DELAY)
@@ -2845,7 +2853,7 @@ void World::KickAllLess(AccountTypes sec)
 }
 
 /// Ban an account or ban an IP address, duration will be parsed using TimeStringToSecs if it is positive, otherwise permban
-BanReturn World::BanAccount(BanMode mode, std::string nameOrIP, std::string duration, std::string reason, std::string author, bool queued)
+BanReturn World::BanAccount(BanMode mode, std::string nameOrIP, std::string macAddress, std::string duration, std::string reason, std::string author, bool queued)
 {
     uint32 duration_secs = TimeStringToSecs(duration);
     PreparedQueryResult resultAccounts = PreparedQueryResult(nullptr); //used for kicking
@@ -2866,6 +2874,7 @@ BanReturn World::BanAccount(BanMode mode, std::string nameOrIP, std::string dura
             stmt->setString(3, reason);
             LoginDatabase.Execute(stmt);
             break;
+
         case BAN_ACCOUNT:
             // No SQL injection with prepared statements
             stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_ACCOUNT_ID_BY_NAME);
@@ -3003,7 +3012,7 @@ void World::BanFlaggedAccounts()
         AccountMgr::GetName(accountid, accountName);
 
         // ban flagged account
-        BanAccount(BAN_ACCOUNT, accountName, durationStr.str(), banreason, author);
+        BanAccount(BAN_ACCOUNT, accountName, nullptr, durationStr.str(), banreason, author);
 
         // delete flagged account
         stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_ACCOUNT_FLAGGED);

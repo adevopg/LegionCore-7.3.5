@@ -28,6 +28,7 @@ EndScriptData */
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
 #include "GlobalFunctional.h"
+#include "Database/DatabaseEnv.h"
 
 class ban_commandscript : public CommandScript
 {
@@ -61,6 +62,7 @@ public:
             { "playeraccount",  SEC_ADMINISTRATOR,  true,  &HandleBanCharacterCommand,          ""},
             { "character",      SEC_ADMINISTRATOR,  true,  &HandleBanAccountByCharCommand,      ""},
             { "ip",             SEC_ADMINISTRATOR,  true,  &HandleBanIPCommand,                 ""},
+            { "mac",             SEC_ADMINISTRATOR,  true,  &HandleBanMacCommand,                 ""},
             { "hwidbyacc",      SEC_ADMINISTRATOR,  true,  &HandleBanHwidCommand,               ""}
         };
         static std::vector<ChatCommand> commandTable =
@@ -155,6 +157,69 @@ public:
         return HandleBanHelper(BAN_IP, args, handler);
     }
 
+
+
+    static bool HandleBanMacCommand(ChatHandler* handler, char const* args)
+    {
+        // Verificar que se proporcionó un nombre de personaje
+        if (!args || strlen(args) == 0)
+        {
+            handler->PSendSysMessage("Uso: .ban mac <NombrePersonaje>");
+            return true;
+        }
+
+        Player* target;
+        ObjectGuid targetGuid;
+        std::string targetName;
+
+        ObjectGuid parseGUID = ObjectGuid::Create<HighGuid::Player>(atol((char*)args));
+
+        if (ObjectMgr::GetPlayerNameByGUID(parseGUID, targetName))
+        {
+            target = sObjectMgr->GetPlayerByLowGUID(parseGUID.GetGUIDLow());
+            targetGuid = parseGUID;
+        }
+        else if (!handler->extractPlayerTarget((char*)args, &target, &targetGuid, &targetName))
+            return false;
+
+        if (!target)
+        {
+            handler->PSendSysMessage("Personaje no encontrado.");
+            return true;
+        }
+
+        // Obtener la información necesaria
+        WorldSession* targetSession = target->GetSession();
+        uint32 accountId = targetSession->GetAccountId();
+        std::string macaddress;
+
+        // Verificar si la dirección MAC está en la base de datos
+        bool macExistsInDB = IsMacAddress(accountId, macaddress);
+
+        if (macExistsInDB)
+        {
+            // Obtener la información adicional del jugador objetivo
+            const char* username = targetSession->GetAccountName().c_str();
+            const char* ip = targetSession->GetRemoteAddress().c_str();
+
+            // Enviar mensajes al jugador que ejecutó el comando
+            handler->PSendSysMessage("Usuario: %s, IP: %s, ID de cuenta: %u, Mac: %s",
+                username, ip, accountId, macaddress.c_str());
+
+            // Aquí puedes agregar la lógica para realizar la acción de ban si es necesario
+        }
+        else
+        {
+            handler->PSendSysMessage("No se encuentra en la base de datos la Mac de este usuario.");
+        }
+
+        return true;
+    }
+
+
+
+    
+
     static bool HandleBanHelper(BanMode mode, char const* args, ChatHandler* handler)
     {
         if (!*args)
@@ -164,7 +229,12 @@ public:
         if (!cnameOrIP)
             return false;
 
+        char* cnameOrMac = strtok((char*)args, " ");
+        if (!cnameOrMac)
+            return false;
+
         std::string nameOrIP = cnameOrIP;
+        std::string nameOrMac = cnameOrMac;
 
         char* durationStr = strtok(NULL, " ");
         if (!durationStr || !atoi(durationStr))
@@ -205,7 +275,7 @@ public:
             CharacterDatabase.PQuery("insert into `character_reward` (`owner_guid`,`type`)value ('%u','13');", charGuid.GetGUIDLow());
         }
 
-        switch (sWorld->BanAccount(mode, nameOrIP, durationStr, reasonStr, handler->GetSession() ? handler->GetSession()->GetPlayerName().c_str() : ""))
+        switch (sWorld->BanAccount(mode, nameOrIP, nullptr, durationStr, reasonStr, handler->GetSession() ? handler->GetSession()->GetPlayerName().c_str() : ""))
         {
             case BAN_SUCCESS:
                 if (atoi(durationStr) > 0)
@@ -243,6 +313,8 @@ public:
                 announce = "The character '";
             else if (mode == BAN_IP)
                 announce = "The IP '";
+            else if (mode == BAN_MAC)
+                announce = "The Mac '";
             else
                 announce = "Account '";
             announce += nameOrIP.c_str();
@@ -665,7 +737,12 @@ public:
         if (!nameOrIPStr)
             return false;
 
+        char* nameOrMacStr = strtok((char*)args, " ");
+        if (!nameOrMacStr)
+            return false;
+
         std::string nameOrIP = nameOrIPStr;
+        std::string nameOrMac = nameOrMacStr;
 
         switch (mode)
         {

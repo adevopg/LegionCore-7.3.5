@@ -88,7 +88,7 @@ void WorldSession::HandleGetProductList(WorldPackets::BattlePay::GetProductList&
         return;
 
     GetBattlePayMgr()->SendProductList();
-    GetBattlePayMgr()->SendPointsBalance();
+    GetBattlePayMgr()->SendPointsBalance(this);
 }
 
 auto MakePurchase = [](ObjectGuid targetCharacter, uint32 clientToken , uint32 productID, WorldSession* session) -> void

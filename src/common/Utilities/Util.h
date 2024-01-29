@@ -183,6 +183,7 @@ void vutf8printf(FILE* out, const char *str, va_list* ap);
 bool Utf8ToUpperOnlyLatin(std::string& utf8String);
 
 bool IsIPAddress(char const* ipaddress);
+bool IsMacAddress(const uint32 accountId, std::string& macaddress);
 
 uint32 CreatePIDFile(std::string const& filename);
 uint32 GetPID();

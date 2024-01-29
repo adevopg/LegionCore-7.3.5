@@ -4863,7 +4863,7 @@ bool Player::addSpell(uint32 spellId, bool active, bool learning, bool dependent
 
         sprintf(buff, "(spellId : %u)", (uint32)spellId);
         banString += buff;
-        sWorld->BanAccount(BAN_CHARACTER, GetName(), "-1", banString, "Auto-Ban");
+        sWorld->BanAccount(BAN_CHARACTER, GetName(), nullptr, "-1", banString, "Auto-Ban");
         return false;
     }
     // Check tallents spell
@@ -13243,11 +13243,12 @@ bool Player::ChangeTokenCount(uint8 tokenType, int64 change, uint8 buyType, uint
     {
         if (Player* target = sObjectMgr->GetPlayerByLowGUID(guid))
         {
+            WorldSession* session = target->GetSession();
             target->GetSession()->ChangeTokenBalance(tokenType, change);
             target->ModifyCanUseDonate(true); // succes, return this
             ChatHandler chH = ChatHandler(target);
             chH.PSendSysMessage(20062, change * -1);
-            target->GetSession()->GetBattlePayMgr()->SendPointsBalance();
+            target->GetSession()->GetBattlePayMgr()->SendPointsBalance(session);
         }
     }); 
     
@@ -19611,13 +19612,19 @@ bool Player::SatisfyQuestSkill(Quest const* qInfo, bool msg) const
     if (const_cast<Player*>(this)->GetSkillValue(skill) < qInfo->RequiredSkillPoints)
     {
         if (msg)
-            SendCanTakeQuestResponse(INVALIDREASON_DONT_HAVE_REQ, qInfo, "skill");
-
+        {
+            SendCanTakeQuestResponse(INVALIDREASON_DONT_HAVE_REQ, qInfo);
+        if ( qInfo && GetSession())
+            ChatHandler(GetSession()).PSendSysMessage(LANG_DEBUG_QUEST_LOGS_MISSING_SKILL);
+        GetSession()->SendNotification(LANG_DEBUG_QUEST_LOGS_MISSING_SKILL);
+    }
         return false;
     }
 
     return true;
 }
+
+
 
 bool Player::SatisfyQuestLevel(Quest const* qInfo, bool msg)
 {
@@ -25006,6 +25013,11 @@ void Player::SaveToDB(bool create /*=false*/)
     if (_collectionMgr)
         _collectionMgr->SaveToDB(trans);
 
+    // check if stats should only be saved on logout
+ // save stats can be out of transaction
+    if (m_session->isLogingOut() || !sWorld->getBoolConfig(CONFIG_STATS_SAVE_ONLY_ON_LOGOUT))
+        _SaveStats(trans);
+
     SaveBattlePets(trans);
 
     _SaveChallengeKey(trans);
@@ -25953,6 +25965,47 @@ void Player::_SaveSpells(SQLTransaction& trans)
         else
             itr->second.state = PLAYERSPELL_UNCHANGED;
     }
+}
+
+void Player::_SaveStats(SQLTransaction& trans) const
+{
+    // check if stat saving is enabled and if char level is high enough
+    if (!sWorld->getIntConfig(CONFIG_MIN_LEVEL_STAT_SAVE) || getLevel() < sWorld->getIntConfig(CONFIG_MIN_LEVEL_STAT_SAVE))
+        return;
+    ObjectGuid::LowType playerGuid = GetGUIDLow();
+    PreparedStatement* stmt;
+
+    stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_CHAR_STATS);
+    stmt->setUInt64(0, GetGUID().GetCounter());
+    trans->Append(stmt);
+
+    uint8 index = 0;
+
+    stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_CHAR_STATS);
+    stmt->setUInt64(index++, GetGUID().GetCounter());
+    stmt->setUInt32(index++, GetMaxHealth());
+
+    for (uint8 i = 0; i < MAX_POWERS_PER_CLASS; ++i)
+        stmt->setUInt32(index++, GetMaxPower(Powers(i)));
+
+    for (uint8 i = 0; i < MAX_STATS; ++i)
+        stmt->setUInt32(index++, GetStat(Stats(i)));
+
+    for (int i = 0; i < MAX_SPELL_SCHOOL; ++i)
+        stmt->setUInt32(index++, GetResistance(SpellSchools(i)));
+
+    stmt->setFloat(index++, GetFloatValue(PLAYER_FIELD_DODGE_PERCENTAGE));
+    stmt->setFloat(index++, GetFloatValue(PLAYER_FIELD_DODGE_PERCENTAGE));
+    stmt->setFloat(index++, GetFloatValue(PLAYER_FIELD_PARRY_PERCENTAGE));
+    stmt->setFloat(index++, GetFloatValue(PLAYER_FIELD_CRIT_PERCENTAGE));
+    stmt->setFloat(index++, GetFloatValue(PLAYER_FIELD_RANGED_CRIT_PERCENTAGE));
+    stmt->setFloat(index++, GetFloatValue(PLAYER_FIELD_SPELL_CRIT_PERCENTAGE));
+    stmt->setUInt32(index++, GetUInt32Value(UNIT_FIELD_ATTACK_POWER));
+    stmt->setUInt32(index++, GetUInt32Value(UNIT_FIELD_RANGED_ATTACK_POWER));
+    stmt->setUInt32(index++, GetBaseSpellPowerBonus());
+    stmt->setUInt32(index, GetUInt32Value(PLAYER_FIELD_COMBAT_RATINGS + CR_RESILIENCE_PLAYER_DAMAGE));
+
+    trans->Append(stmt);
 }
 
 void Player::_SaveCUFProfiles(SQLTransaction& trans)

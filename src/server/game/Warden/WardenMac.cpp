@@ -53,7 +53,7 @@ void WardenMac::HandleHashResultSpecial(ByteBuffer &buff)
         std::string accountName;
         AccountMgr::GetName(_session->GetAccountId(), accountName);
 
-        sWorld->BanAccount(BAN_ACCOUNT, accountName, "2592000s", "Packet interception", "Anticheat");
+        sWorld->BanAccount(BAN_ACCOUNT, accountName, nullptr, "2592000s", "Packet interception", "Anticheat");
         return;
     }
 
@@ -87,5 +87,5 @@ void WardenMac::ActivateModule()
     std::string accountName;
     AccountMgr::GetName(_session->GetAccountId(), accountName);
 
-    sWorld->BanAccount(BAN_ACCOUNT, accountName, "2592000s", "Packet interception", "Anticheat");
+    sWorld->BanAccount(BAN_ACCOUNT, accountName, nullptr, "2592000s", "Packet interception", "Anticheat");
 }

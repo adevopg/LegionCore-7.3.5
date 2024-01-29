@@ -535,7 +535,7 @@ bool WordFilterMgr::AddComplaintForUser(const ObjectGuid & offender, const Objec
                     Field* fields = result->Fetch();
                     std::string accountName = fields[0].GetString();
 
-                    sWorld->BanAccount(BAN_ACCOUNT, accountName.c_str(), "-1", ss.str().c_str(), "Server");
+                    sWorld->BanAccount(BAN_ACCOUNT, accountName.c_str(), nullptr, "-1", ss.str().c_str(), "Server");
                     info.m_muteTime = 4294967295;
                 }
             }

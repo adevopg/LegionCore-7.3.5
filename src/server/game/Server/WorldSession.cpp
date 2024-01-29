@@ -40,6 +40,7 @@
 #include "Group.h"
 #include "Guild.h"
 #include "GuildMgr.h"
+#include "WorldSession.h"
 #include "LFGListMgr.h"
 #include "Log.h"
 #include "MapManager.h"
@@ -58,7 +59,6 @@
 #include "WardenWin.h"
 #include "World.h"
 #include "WorldPacket.h"
-#include "WorldSession.h"
 #include "WorldSocket.h"
 
 #define MAX_PROCESSED_PACKETS_IN_SAME_WORLDSESSION_UPDATE 100
@@ -1235,6 +1235,36 @@ void WorldSession::SetAchievement(uint32 achievementId)
     m_achievement[achievementId] = true;
 }
 
+std::string const& WorldSession::GetMacRemoteAddress()
+{
+
+    // Verifica si la dirección MAC está disponible
+    if (!mac_address.empty()) {
+        // Devuelve una cadena vacía o algún valor predeterminado según tus necesidades
+        return mac_address;
+    }
+
+    // Obtén el objeto PreparedStatement
+    PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_MAC_INFO);
+
+    // Realiza la consulta
+    PreparedQueryResult result = LoginDatabase.Query(stmt);
+
+    // Verifica si la consulta fue exitosa
+    if (result) {
+        // Suponiendo que la consulta devuelve un solo resultado y una sola columna (ajusta según tus necesidades)
+        if (result->Fetch()) {
+            // Obtén el valor de la columna, ajusta según la estructura de tu base de datos
+            mac_address = result->operator[](0).GetString();  // Ajusta según el método proporcionado por tu interfaz
+            return mac_address;
+        }
+    }
+
+    // Devuelve una cadena vacía o algún valor predeterminado si no se encontró la información
+    return "";  // Cambiado de 'true' a una cadena vacía, ya que el tipo de retorno es std::string
+}
+
+
 void WorldSession::LoadAchievement(PreparedQueryResult const& result)
 {
     if (!result)
@@ -1257,10 +1287,10 @@ void WorldSession::ProcessAnticheatAction(const char* detector, const char* reas
         if (GetSecurity() == SEC_PLAYER)
         {
             std::string _reason = std::string("CHEAT") + ": " + reason;
-            sWorld->BanAccount(BAN_ACCOUNT, _player->GetName(), secsToTimeString(banSeconds, true), _reason, detector);
+            sWorld->BanAccount(BAN_ACCOUNT, _player->GetName(), nullptr, secsToTimeString(banSeconds, true), _reason, detector);
             std::stringstream banIpReason;
             banIpReason << "Cf account " << _player->GetName();
-            sWorld->BanAccount(BAN_IP, GetRemoteAddress(), secsToTimeString(banSeconds, true), banIpReason.str().c_str(), detector);
+            sWorld->BanAccount(BAN_IP, GetRemoteAddress(), nullptr, secsToTimeString(banSeconds, true), banIpReason.str().c_str(), detector);
         }
     }
     else if (cheatAction & CHEAT_ACTION_BAN_ACCOUNT)
@@ -1268,7 +1298,7 @@ void WorldSession::ProcessAnticheatAction(const char* detector, const char* reas
         action = "Banned.";
         std::string _reason = std::string("CHEAT") + ": " + reason;
         if (GetSecurity() == SEC_PLAYER)
-            sWorld->BanAccount(BAN_ACCOUNT, _player->GetName(), secsToTimeString(banSeconds, true), _reason, detector);
+            sWorld->BanAccount(BAN_ACCOUNT, _player->GetName(), nullptr, secsToTimeString(banSeconds, true), _reason, detector);
     }
     else if (cheatAction & CHEAT_ACTION_KICK)
     {
@@ -1307,6 +1337,8 @@ void WorldSession::ProcessAnticheatAction(const char* detector, const char* reas
     }
     sLog->outAnticheat("%s %s: %s %s", playerDesc.c_str(), detector, reason, action);
 }
+
+
 
 void WorldSession::LookupPlayerSearchCommand(PreparedQueryResult result, int32 limit)
 {

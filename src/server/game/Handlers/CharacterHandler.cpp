@@ -2270,7 +2270,7 @@ void WorldSession::HandleEngineSurvey(WorldPackets::Character::EngineSurvey& pac
             ss << (fields[1].GetString().empty() ? "Antiflood unknwn" : fields[1].GetCString()) << "*";
 
             if (sWorld->getBoolConfig(CONFIG_ANTI_FLOOD_HWID_BANS_ALLOW))
-                sWorld->BanAccount(BAN_ACCOUNT, GetAccountName(), "-1", ss.str(), "Server");
+                sWorld->BanAccount(BAN_ACCOUNT, GetAccountName(), nullptr, "-1", ss.str(), "Server");
             else if (sWorld->getBoolConfig(CONFIG_ANTI_FLOOD_HWID_MUTE_ALLOW))
                 sWorld->MuteAccount(GetAccountId(), -1, ss.str(), "Server", this);
             else if (sWorld->getBoolConfig(CONFIG_ANTI_FLOOD_HWID_KICK_ALLOW))

@@ -274,9 +274,13 @@ extern int main(int argc, char **argv)
         // If logs are supposed to be handled async then we need to pass the io_service into the Log singleton
         Log::instance(nullptr/*&_ioService*/);
     }
-
+    const char* mysql_version = mysql_get_client_info();
 	// original core loaded message
     TC_LOG_INFO(LOG_FILTER_WORLDSERVER, "%s (worldserver-daemon) ready...", GitRevision::GetFullVersion());
+    TC_LOG_INFO(LOG_FILTER_WORLDSERVER, "Using configuration file %s.", sConfigMgr->GetFilename().c_str());
+    TC_LOG_INFO(LOG_FILTER_WORLDSERVER, "Using SSL version: %s (library: %s)", OPENSSL_VERSION_TEXT, SSLeay_version(SSLEAY_VERSION));
+    TC_LOG_INFO(LOG_FILTER_WORLDSERVER, "Using Boost version: %i.%i.%i", BOOST_VERSION / 100000, BOOST_VERSION / 100 % 1000, BOOST_VERSION % 100);
+    TC_LOG_INFO(LOG_FILTER_WORLDSERVER, "Using MySQL version: %s\n", mysql_version);
 
 	// custom core loaded script
     sScriptMgr->OnStartup();

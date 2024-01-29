@@ -411,7 +411,7 @@ namespace cds {
                             || p->m_list.m_idOwner.load( atomics::memory_order_relaxed ) == mainThreadId
                             );
 
-                        al.Delete( p );
+                        al.Delete(p, 1);
                         p = pNext;
                     }
                 }

@@ -81,11 +81,14 @@ class GmTicket
 {
 public:
     GmTicket();
-    explicit GmTicket(Player* player, WorldPackets::Ticket::SupportTicketSubmitBug& packet);
+    explicit GmTicket(std::string p_PlayerName, ObjectGuid p_PlayerGuid, uint32 p_MapID, WorldLocation p_Position, std::string p_Content);
     ~GmTicket();
+
+    void WriteData(std::vector<std::string>& p_Data, std::string& p_Message) const;
 
     bool IsClosed() const { return !_closedBy.IsEmpty(); }
     bool IsCompleted() const { return _completed; }
+    void SendResponse(WorldSession* p_Session) const;
     bool IsFromPlayer(ObjectGuid const& guid) const { return guid == _playerGuid; }
     bool IsAssigned() const { return _assignedTo; }
     bool IsAssignedTo(ObjectGuid const& guid) const { return guid == _assignedTo; }
@@ -155,6 +158,8 @@ private:
     bool _completed;
     GMTicketEscalationStatus _escalatedStatus;
     bool _viewed;
+    bool m_NeedResponse;
+    bool m_HaveTicket;
     std::string _response;
 };
 typedef std::map<uint32, GmTicket*> GmTicketList;
@@ -218,6 +223,7 @@ public:
     void ShowList(ChatHandler& handler, bool onlineOnly) const;
     void ShowClosedList(ChatHandler& handler) const;
     void ShowEscalatedList(ChatHandler& handler) const;
+    void SendTicket(WorldSession* p_Session, GmTicket* p_Ticket) const;
 
 protected:
     GmTicketList _ticketList;

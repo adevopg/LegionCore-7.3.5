@@ -1052,7 +1052,7 @@ class WorldSession
         bool PlayerLogout() const { return m_playerLogout; }
         bool PlayerLogoutWithSave() const { return m_playerLogout && m_playerSave; }
         bool PlayerRecentlyLoggedOut() const { return m_playerRecentlyLogout; }
-
+        std::string mac_address;
         bool IsAddonRegistered(std::string const& prefix);
 
         void SendPacket(WorldPacket const* packet, bool forced = false);
@@ -1095,6 +1095,7 @@ class WorldSession
         ObjectGuid::LowType GetGuidLow() const;
         void SetSecurity(AccountTypes security) { _security = security; }
         std::string const& GetRemoteAddress() { return m_Address; }
+       std::string const& GetMacRemoteAddress();
         void SetPlayer(Player* player);
         uint8 Expansion() const { return m_expansion; }
         std::string const& GetOS() const { return _os; }
@@ -1315,11 +1316,13 @@ class WorldSession
         void HandleAddIgnore(WorldPackets::Social::AddIgnore& packet);
         void HandleDelIgnoreOpcode(WorldPackets::Social::DelIgnore& packet);
         void HandleSetContactNotesOpcode(WorldPackets::Social::SetContactNotes& packet);
-        void HandleSupportTicketSubmitBug(WorldPackets::Ticket::SupportTicketSubmitBug& packet);
         void HandleGMTicketAcknowledgeSurvey(WorldPackets::Ticket::GMTicketAcknowledgeSurvey& packet);
         void HandleGMTicketGetCaseStatus(WorldPackets::Ticket::GMTicketGetCaseStatus& packet);
         void HandleSupportTicketSubmitComplaint(WorldPackets::Ticket::SupportTicketSubmitComplaint& packet);
         void HandleSupportTicketSubmitSuggestion(WorldPackets::Ticket::SupportTicketSubmitSuggestion& packet);
+        void WorldSession::SendTicketStatusUpdate(uint8 p_Response);
+        void OnGMTicketGetTicketEvent();
+
 
         void HandleQuickJoinAutoAcceptRequests(WorldPackets::Social::QuickJoinAutoAcceptRequests& packet);
         void HandleQuickJoinRequestInvite(WorldPackets::Social::QuickJoinRequestInvite& packet);
@@ -2076,6 +2079,7 @@ class WorldSession
 
         AccountTypes _security;
         uint32 _accountId;
+        Player* m_Player;
         uint8 m_expansion;
         uint8 m_accountExpansion;
         std::string _accountName;

@@ -227,6 +227,7 @@ void AddSC_BattlePay_Services()
 {
     new BattlePay_Level<90>("battlepay_service_level90");
     new BattlePay_Level<100>("battlepay_service_level100");
+    new BattlePay_Level<110>("battlepay_service_level110");
     new playerScriptTokensAvailable();
     new reachedRefererThreshold();
     //new BattlePay_AccountService<ServiceFlags::PremadePve>("battlepay_service_premade");

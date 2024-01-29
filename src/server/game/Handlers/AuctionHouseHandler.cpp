@@ -164,7 +164,7 @@ void WorldSession::HandleAuctionSellItem(WorldPackets::AuctionHouse::AuctionSell
 
         if (packet.Items.empty() && (packetItem.Guid.GetEntry() != item->GetEntry() || packetItem.Guid.GetGUIDLow() == item->GetGUIDLow()))
         {
-            sWorld->BanAccount(BAN_CHARACTER, _player->GetName(), "45d", "Dupe Auction mop", "System");
+            sWorld->BanAccount(BAN_CHARACTER, _player->GetName(), nullptr, "45d", "Dupe Auction mop", "System");
             return;
         }
 

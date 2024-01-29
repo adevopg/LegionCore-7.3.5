@@ -284,6 +284,7 @@ public:
         return QueryCallback(std::move(result));
     }
 
+
     void CallBackQuery(PreparedStatement* stmt, std::function<void(PreparedQueryResult)> callback)
     {
         PreparedStatementTask* task = new PreparedStatementTask(stmt, true, true, std::move(callback));

@@ -28,6 +28,7 @@
 #include "WorldSession.h"
 #include "DatabaseEnv.h"
 #include "WordFilterMgr.h"
+#include "MiscPackets.h"
 
 void WorldSession::HandleComplaint(WorldPackets::Ticket::Complaint& packet)
 {
@@ -54,28 +55,7 @@ void WorldSession::HandleComplaint(WorldPackets::Ticket::Complaint& packet)
     SendPacket(result.Write());
 }
 
-void WorldSession::HandleSupportTicketSubmitBug(WorldPackets::Ticket::SupportTicketSubmitBug& packet)
-{
-    // Don't accept tickets if the ticket queue is disabled. (Ticket UI is greyed out but not fully dependable)
-    if (!sTicketMgr->GetStatus())
-        return;
 
-    if (GetPlayer()->getLevel() < sWorld->getIntConfig(CONFIG_TICKET_LEVEL_REQ))
-    {
-        SendNotification(GetTrinityString(LANG_TICKET_REQ), sWorld->getIntConfig(CONFIG_TICKET_LEVEL_REQ));
-        return;
-    }
-
-    // Player must not have ticket
-    if (!sTicketMgr->GetTicketByPlayer(GetPlayer()->GetGUID()))
-    {
-        GmTicket* ticket = new GmTicket(GetPlayer(), packet);
-        sTicketMgr->AddTicket(ticket);
-        sTicketMgr->UpdateLastChange();
-
-        sWorld->SendGMText(LANG_COMMAND_TICKETNEW, GetPlayer()->GetName(), ticket->GetId());
-    }
-}
 
 void WorldSession::HandleGMTicketGetSystemStatus(WorldPackets::Ticket::GMTicketGetSystemStatus& /*packet*/)
 {
@@ -100,3 +80,61 @@ void WorldSession::HandleSupportTicketSubmitComplaint(WorldPackets::Ticket::Supp
 
 void WorldSession::HandleSupportTicketSubmitSuggestion(WorldPackets::Ticket::SupportTicketSubmitSuggestion& /*packet*/)
 { }
+
+void WorldSession::OnGMTicketGetTicketEvent()
+{
+    if (m_Player == nullptr)
+        return;
+
+    SendQueryTimeResponse();
+
+    if (GmTicket* l_Ticket = sTicketMgr->GetTicketByPlayer(GetPlayer()->GetGUID()))
+    {
+        if (l_Ticket->IsCompleted())
+            l_Ticket->SendResponse(this);
+        else
+            sTicketMgr->SendTicket(this, l_Ticket);
+    }
+    else
+        sTicketMgr->SendTicket(this, NULL);
+}
+
+
+void WorldSession::SendTicketStatusUpdate(uint8 p_Response)
+{
+    if (!GetPlayer())
+        return;
+
+    WorldPackets::Misc::DisplayGameError display;
+
+    switch (p_Response)
+    {
+    case GMTICKET_RESPONSE_ALREADY_EXIST:       ///< = 1
+        display.Error = UIErrors::ERR_TICKET_ALREADY_EXISTS;
+        break;
+    case GMTICKET_RESPONSE_UPDATE_ERROR:        ///< = 5
+        display.Error = UIErrors::ERR_TICKET_UPDATE_ERROR;
+        break;
+    case GMTICKET_RESPONSE_CREATE_ERROR:        ///< = 3
+        display.Error = UIErrors::ERR_TICKET_CREATE_ERROR;
+        break;
+
+    case GMTICKET_RESPONSE_CREATE_SUCCESS:      ///< = 2
+    case GMTICKET_RESPONSE_UPDATE_SUCCESS:      ///< = 4
+        OnGMTicketGetTicketEvent();
+        break;
+
+    case GMTICKET_RESPONSE_TICKET_DELETED:      ///< = 9
+        GetPlayer()->SendCustomMessage("NOVA_CLIENT_TICKET_DELETED");
+        break;
+
+    default:
+        display.Error = UIErrors::ERR_TICKET_DB_ERROR;
+        break;
+    }
+
+    if (p_Response != GMTICKET_RESPONSE_CREATE_SUCCESS &&
+        p_Response != GMTICKET_RESPONSE_UPDATE_SUCCESS &&
+        p_Response != GMTICKET_RESPONSE_TICKET_DELETED) {
+    }
+}

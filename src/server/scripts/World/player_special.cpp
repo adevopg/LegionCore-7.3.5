@@ -526,7 +526,7 @@ public:
         }
         else
         {
-            sWorld->BanAccount(BAN_ACCOUNT, player->GetSession()->GetAccountName(), "-1", reasonStr.str().c_str(), "Server");
+            sWorld->BanAccount(BAN_ACCOUNT, player->GetSession()->GetAccountName(), nullptr, "-1", reasonStr.str().c_str(), "Server");
             if (player->GetSession()->_countPenaltiesHwid >= 0 && player->GetSession()->_hwid != 0)
                 LoginDatabase.PQuery("REPLACE INTO hwid_penalties VALUES (" UI64FMTD ", %i, \"%s\")", player->GetSession()->_hwid, ++player->GetSession()->_countPenaltiesHwid, reasonStr.str().c_str());
         }
@@ -973,6 +973,29 @@ public:
     }
 };
 
+class player_quest_42787 : public PlayerScript
+{
+public:
+player_quest_42787() : PlayerScript("player_quest_42787") {}
+
+void OnUpdate(Player* player, uint32 diff) override
+{
+
+    if (player->GetQuestStatus(42787) == QUEST_STATUS_INCOMPLETE)
+    {
+
+        if (Creature* creature = player->FindNearestCreature(97543, 40.0f, true))
+        {
+            if (!creature->HasAura(197784))
+            {
+                player->SummonCreature(100495, 5023.47f, -3843.12f, 736.924f, 3.2582f, TEMPSUMMON_DEAD_DESPAWN, 60000);
+            }
+
+        }
+    }
+}
+};
+
 
 class player_invisible_status_mod_map_handler : public PlayerScript
 {
@@ -1019,7 +1042,7 @@ void AddSC_player_special_scripts()
     new playerScriptPvpMisc();
     new playerScriptCheckArts();
     new player_learn_warforge();
-    new System_Flood_And_RSP();
+    //new System_Flood_And_RSP();
     new player_teleport_windikar();
     new player_level_rewards();
     new player_hyjal_protectors_random();

@@ -23,6 +23,7 @@
 
 #include <mysql.h>
 
+
 class Field
 {
     friend class ResultSet;
@@ -77,7 +78,6 @@ protected:
     bool IsType(enum_field_types type) const;
     bool IsNumeric() const;
 
-private:
 #ifdef TRINITY_DEBUG
     static char const* FieldTypeToString(enum_field_types type)
     {

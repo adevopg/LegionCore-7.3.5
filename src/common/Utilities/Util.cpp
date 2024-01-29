@@ -19,6 +19,7 @@
 
 #include "Util.h"
 #include "Common.h"
+#include "Database/DatabaseEnv.h"
 #include "CompilerDefs.h"
 #include "utf8.h"
 #include "Errors.h" // for ASSERT
@@ -200,6 +201,7 @@ void ApplyPercentModFloatVar(float& var, float val, bool apply)
     var *= (apply ? (100.0f + val) / 100.0f : 100.0f / (100.0f + val));
 }
 
+
 int32 RoundingFloatValue(float val)
 {
     int32 intVal = val;
@@ -220,6 +222,42 @@ bool IsIPAddress(char const* ipaddress)
     boost::asio::ip::address::from_string(ipaddress, error);
     return !error;
 }
+
+bool IsMacAddress(const uint32 accountId, std::string& macaddress)
+{
+    // Construye la consulta SQL directamente
+    std::string sql = "SELECT mac FROM mac_addresses WHERE account_id = " + std::to_string(accountId);
+
+    // Realiza la consulta
+        QueryResult result = LoginDatabase.PQuery(sql);
+
+    // Verifica si la consulta tuvo al menos una fila
+    if (result && result->Fetch())
+    {
+        Field* fields = result->Fetch(); // Obtén los campos de la fila
+
+        // Obtén la dirección MAC de la columna 0 (índice 0)
+        macaddress = fields[0].GetString();
+
+        return true;
+    }
+    else
+    {
+    }
+
+    // Si no se encuentra la dirección MAC, asegúrate de que la variable macaddress esté vacía
+    macaddress.clear();
+
+    return false;
+}
+
+
+
+
+
+
+
+
 
 uint32 CreatePIDFile(std::string const& filename)
 {

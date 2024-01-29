@@ -443,7 +443,7 @@ std::string Warden::Penalty(uint16 checkId)
                 else
                     banReason << check->BanReason << " (CheckId: " << checkId << ") (Realm: " << sWorld->GetRealmName() << ")";
 
-                sWorld->BanAccount(BAN_ACCOUNT, accountName, duration.str(), banReason.str(), "Anticheat", true);
+                sWorld->BanAccount(BAN_ACCOUNT, accountName, nullptr, duration.str(), banReason.str(), "Anticheat", true);
                 KickPlayer();
                 return "Ban";
             }

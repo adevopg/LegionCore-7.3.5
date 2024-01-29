@@ -305,31 +305,37 @@ template <typename T>
 std::string StateToHexBytesString(const T& data, const unsigned char* k, const bool onlyDigits = false)
 {
     unsigned char nonce[crypto_secretbox_NONCEBYTES];
-	randombytes(nonce, crypto_secretbox_NONCEBYTES);
+    randombytes(nonce, crypto_secretbox_NONCEBYTES);
 
     std::ostringstream ostream;
     cereal::BinaryOutputArchive archive(ostream);
     archive(data);
 
     std::string dataAsString = ostream.str();
-    std::vector<unsigned char> unsignedData(dataAsString.data(), dataAsString.data() + dataAsString.length());
+    std::vector<unsigned char> unsignedData(dataAsString.begin(), dataAsString.end());
 
-    std::vector<unsigned char> toEncryptV = std::vector<unsigned char>(crypto_secretbox_ZEROBYTES, '\0');
+    std::vector<unsigned char> toEncryptV(crypto_secretbox_ZEROBYTES, '\0');
     toEncryptV.insert(toEncryptV.end(), unsignedData.begin(), unsignedData.end());
-    std::vector<unsigned char> encryptedV = std::vector<unsigned char>(toEncryptV.size() +
+    std::vector<unsigned char> encryptedV(toEncryptV.size() +
         crypto_secretbox_NONCEBYTES - crypto_secretbox_BOXZEROBYTES, '\0');
 
-    crypto_secretbox(encryptedV.data() + crypto_secretbox_NONCEBYTES - crypto_secretbox_BOXZEROBYTES, toEncryptV.data(), toEncryptV.size(), nonce, k);
+    crypto_secretbox(encryptedV.data() + crypto_secretbox_NONCEBYTES - crypto_secretbox_BOXZEROBYTES,
+        toEncryptV.data(), toEncryptV.size(), nonce, k);
+
     for (int i = 0; i < crypto_secretbox_NONCEBYTES; i++)
         encryptedV[i] = nonce[i];
 
-    char buffer[onlyDigits ? 4 : 3];
-    std::string result;
-    for (const unsigned char byte : encryptedV)
-        if (snprintf(buffer, onlyDigits ? 4 : 3, onlyDigits ? "%.3u" : "%.2X", byte) == onlyDigits ? 3 : 2)
-            result += std::string(buffer);
+    std::stringstream resultStream;
+    for (const unsigned char byte : encryptedV) {
+        if (onlyDigits) {
+            resultStream << std::setw(3) << std::setfill('0') << static_cast<unsigned int>(byte);
+        }
+        else {
+            resultStream << std::setw(2) << std::setfill('0') << std::hex << static_cast<unsigned int>(byte);
+        }
+    }
 
-    return result;
+    return resultStream.str();
 }
 
 template <typename T>

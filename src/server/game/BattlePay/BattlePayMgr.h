@@ -242,6 +242,29 @@ namespace Battlepay
         };
     }
 
+     namespace CustomMessage
+        {
+            enum
+            {
+                NovaStoreBalance,
+                NovaAccountId,
+                NovaStoreBuyFailed
+            };
+
+            static const char* g_CustomMessage[] =
+            {
+                "NOVA_WOW_STORE_BALANCE",
+                "NOVA_WOW_ACCOUNT_ID",
+                "NOVA_WOW_STORE_BUY_FAILED"
+            };
+
+            inline const char* GetCustomMessage(uint8 p_ID)
+            {
+                return g_CustomMessage[p_ID];
+            }
+        }
+
+
     enum BattlePayCurrency
     {
         Unknow = 0,
@@ -453,6 +476,7 @@ public:
     bool AlreadyOwnProduct(uint32 itemId) const;
     void ProcessDelivery(Battlepay::Purchase* purchase);
     void RegisterStartPurchase(Battlepay::Purchase purchase);
+    void OnPaymentSucess(uint32 p_AccountId, uint32 p_NewBalance);
     uint64 GenerateNewPurchaseID();
     uint64 GenerateNewDistributionId();
     Battlepay::Purchase* GetPurchase();
@@ -460,7 +484,7 @@ public:
     std::tuple<bool, WorldPackets::BattlePay::ProductDisplayInfo> WriteDisplayInfo(uint32 displayInfoID, LocaleConstant localeIndex, uint32 productId = 0);
     auto ProductFilter(Battlepay::Product product) -> bool;
     void SendProductList();
-    void SendPointsBalance();
+    void SendPointsBalance(WorldSession* p_Session);
     void SendBattlePayDistribution(uint32 productId, uint8 status, uint64 distributionId, ObjectGuid targetGuid = ObjectGuid::Empty);
     void AssignDistributionToCharacter(ObjectGuid const& targetCharGuid, uint64 distributionId, uint32 productId, uint16 specialization_id, uint16 choice_id);
     void Update(uint32 diff);

@@ -1,25 +1,12 @@
 /*
- * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* This file is part of Project SkyFire https://www.projectskyfire.org.
+* See LICENSE.md file for Copyright information
+*/
 
 #include "DatabaseEnv.h"
 #include "Log.h"
 
-ResultSet::ResultSet(MYSQL_RES *result, MYSQL_FIELD *fields, uint64 rowCount, uint32 fieldCount) :
+ResultSet::ResultSet(MYSQL_RES* result, MYSQL_FIELD* fields, uint64 rowCount, uint32 fieldCount) :
     _rowCount(rowCount),
     _fieldCount(fieldCount),
     _result(result),
@@ -29,7 +16,7 @@ ResultSet::ResultSet(MYSQL_RES *result, MYSQL_FIELD *fields, uint64 rowCount, ui
     ASSERT(_currentRow);
 }
 
-PreparedResultSet::PreparedResultSet(MYSQL_STMT* stmt, MYSQL_RES *result, uint64 rowCount, uint32 fieldCount) :
+PreparedResultSet::PreparedResultSet(MYSQL_STMT* stmt, MYSQL_RES* result, uint64 rowCount, uint32 fieldCount) :
     m_rowCount(rowCount),
     m_rowPosition(0),
     m_fieldCount(fieldCount),
@@ -49,17 +36,20 @@ PreparedResultSet::PreparedResultSet(MYSQL_STMT* stmt, MYSQL_RES *result, uint64
     }
 
     m_rBind = new MYSQL_BIND[m_fieldCount];
-    m_isNull = new my_bool[m_fieldCount];
+    m_isNull = new bool[m_fieldCount];
     m_length = new unsigned long[m_fieldCount];
 
-    memset(m_isNull, 0, sizeof(my_bool) * m_fieldCount);
+    memset(m_isNull, 0, sizeof(bool) * m_fieldCount);
     memset(m_rBind, 0, sizeof(MYSQL_BIND) * m_fieldCount);
     memset(m_length, 0, sizeof(unsigned long) * m_fieldCount);
 
     //- This is where we store the (entire) resultset
     if (mysql_stmt_store_result(m_stmt))
     {
-        TC_LOG_WARN(LOG_FILTER_SQL, "%s:mysql_stmt_store_result, cannot bind result from MySQL server. Error: %s", __FUNCTION__, mysql_stmt_error(m_stmt));
+        TC_LOG_WARN(LOG_FILTER_SQL, "sql.sql", "%s:mysql_stmt_store_result, cannot bind result from MySQL server. Error: %s", __FUNCTION__, mysql_stmt_error(m_stmt));
+        delete[] m_rBind;
+        delete[] m_isNull;
+        delete[] m_length;
         return;
     }
 
@@ -86,7 +76,7 @@ PreparedResultSet::PreparedResultSet(MYSQL_STMT* stmt, MYSQL_RES *result, uint64
     //- This is where we bind the bind the buffer to the statement
     if (mysql_stmt_bind_result(m_stmt, m_rBind))
     {
-        TC_LOG_WARN(LOG_FILTER_SQL, "%s:mysql_stmt_bind_result, cannot bind result from MySQL server. Error: %s", __FUNCTION__, mysql_stmt_error(m_stmt));
+        TC_LOG_INFO(LOG_FILTER_SQL, "sql.sql", "%s:mysql_stmt_bind_result, cannot bind result from MySQL server. Error: %s", __FUNCTION__, mysql_stmt_error(m_stmt));
         delete[] m_rBind;
         delete[] m_isNull;
         delete[] m_length;
@@ -148,10 +138,12 @@ PreparedResultSet::~PreparedResultSet()
 
 bool ResultSet::NextRow()
 {
+    MYSQL_ROW row;
+
     if (!_result)
         return false;
 
-    MYSQL_ROW row = mysql_fetch_row(_result);
+    row = mysql_fetch_row(_result);
     if (!row)
     {
         CleanUp();
@@ -172,27 +164,6 @@ bool ResultSet::NextRow()
     return true;
 }
 
-uint64 ResultSet::GetRowCount() const
-{
-    return _rowCount;
-}
-
-uint32 ResultSet::GetFieldCount() const
-{
-    return _fieldCount;
-}
-
-Field* ResultSet::Fetch() const
-{
-    return _currentRow;
-}
-
-const Field& ResultSet::operator[](uint32 index) const
-{
-    ASSERT(index < _fieldCount);
-    return _currentRow[index];
-}
-
 bool PreparedResultSet::NextRow()
 {
     /// Only updates the m_rowPosition so upper level code knows in which element
@@ -203,29 +174,6 @@ bool PreparedResultSet::NextRow()
     return true;
 }
 
-uint64 PreparedResultSet::GetRowCount() const
-{
-    return m_rowCount;
-}
-
-uint32 PreparedResultSet::GetFieldCount() const
-{
-    return m_fieldCount;
-}
-
-Field* PreparedResultSet::Fetch() const
-{
-    ASSERT(m_rowPosition < m_rowCount);
-    return m_rows[uint32(m_rowPosition)];
-}
-
-const Field& PreparedResultSet::operator[](uint32 index) const
-{
-    ASSERT(m_rowPosition < m_rowCount);
-    ASSERT(index < m_fieldCount);
-    return m_rows[uint32(m_rowPosition)][index];
-}
-
 bool PreparedResultSet::_NextRow()
 {
     /// Only called in low-level code, namely the constructor
@@ -234,7 +182,14 @@ bool PreparedResultSet::_NextRow()
         return false;
 
     int retval = mysql_stmt_fetch(m_stmt);
-    return retval == 0 || retval == MYSQL_DATA_TRUNCATED;
+
+    if (!retval || retval == MYSQL_DATA_TRUNCATED)
+        retval = true;
+
+    if (retval == MYSQL_NO_DATA)
+        retval = false;
+
+    return retval;
 }
 
 void ResultSet::CleanUp()

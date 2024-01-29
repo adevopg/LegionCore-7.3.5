@@ -82,6 +82,7 @@ static uint32 _dbPingInterval;
 static boost::asio::deadline_timer* _banExpiryCheckTimer;
 static uint32 _banExpiryCheckInterval;
 void ShutdownThreadPool(std::vector<std::thread>& threadPool);
+const char* mysql_version = mysql_get_client_info();
 
 int main(int argc, char** argv)
 {
@@ -120,6 +121,8 @@ int main(int argc, char** argv)
         TC_LOG_INFO(LOG_FILTER_BATTLENET, "Using configuration file %s.", sConfigMgr->GetFilename().c_str());
         TC_LOG_INFO(LOG_FILTER_BATTLENET, "Using SSL version: %s (library: %s)", OPENSSL_VERSION_TEXT, SSLeay_version(SSLEAY_VERSION));
         TC_LOG_INFO(LOG_FILTER_BATTLENET, "Using Boost version: %i.%i.%i", BOOST_VERSION / 100000, BOOST_VERSION / 100 % 1000, BOOST_VERSION % 100);
+        TC_LOG_INFO(LOG_FILTER_BATTLENET, "Using MySQL version: %s\n", mysql_version);
+        
     }
     );
 
