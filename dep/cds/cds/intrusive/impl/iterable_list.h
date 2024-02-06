@@ -1253,7 +1253,7 @@ namespace cds { namespace intrusive {
         void delete_node( node_type * pNode )
         {
             m_Stat.onNodeRemoved();
-            cxx_node_allocator().Delete( pNode, 1 );
+            cxx_node_allocator().Delete( pNode );
         }
 
         static void retire_data( value_type * pVal )

@@ -3,7 +3,12 @@
 DELETE FROM spell_script_names WHERE spell_id = 227058 AND ScriptName = 'spell_q42740';
 
 -- disable custom event (modified uwow Legion Invasion - Westfall/Barrens)
-UPDATE game_event SET start_time = '1970-01-01 00:00:00', end_time = '1970-01-01 00:00:00', length = '1' WHERE eventEntry = 811;
+SET sql_mode = '';
+UPDATE game_event
+SET start_time = '1970-01-01 00:00:00',
+    end_time = '1970-01-01 00:00:00',
+    length = '1'
+WHERE eventEntry = 811;
 
 -- disable rep gain from always spawned world quest npc 92128 (Felskorn Pilferer)
 -- was: INSERT INTO creature_onkill_reputation (`creature_id`, `RewFaction`, `RewValue`, `MaxStanding`) VALUES (92128, 1948, 75, 7);

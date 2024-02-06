@@ -44,30 +44,21 @@ namespace cds {
             The class is the wrapper around underlying \p Alloc class.
             \p Alloc provides the \p std::allocator interface.
         */
-
-
-        template <typename T, class Alloc>
-        class Allocator : public std::conditional<
-            std::is_same<T, typename Alloc::value_type>::value,
-            Alloc,
-            typename std::allocator_traits<Alloc>::template rebind_alloc<T>
-        >::type
+        template <typename T, class Alloc = CDS_DEFAULT_ALLOCATOR >
+        class Allocator
+            : public std::conditional<
+                        std::is_same< T, typename Alloc::value_type>::value
+                        , Alloc
+                        , typename Alloc::template rebind<T>::other
+                     >::type
         {
         public:
-            using value_type = T;
-            using allocator_type = typename std::conditional<
-                std::is_same<T, typename Alloc::value_type>::value,
-                Alloc,
-                typename std::allocator_traits<Alloc>::template rebind_alloc<T>
-            >::type;
-        public:
             /// Underlying allocator type
-            using allocator_type = typename std::conditional<
-                std::is_same<T, typename Alloc::value_type>::value,
-                Alloc,
-                typename std::allocator_traits<Alloc>::template rebind_alloc<T>
-            >::type;
-
+            typedef typename std::conditional<
+                std::is_same< T, typename Alloc::value_type>::value
+                , Alloc
+                , typename Alloc::template rebind<T>::other
+            >::type allocator_type;
 
             /// \p true if underlined allocator is \p std::allocator, \p false otherwise
             static CDS_CONSTEXPR bool const c_bStdAllocator = std::is_same< allocator_type, std::allocator<T>>::value;
@@ -133,25 +124,19 @@ namespace cds {
             }
 
             /// Analogue of operator delete
-
-         
-
-            void Destroy(value_type* p)
+            void Delete( value_type * p )
             {
-                this->destroy(p);  // Use the destroy member function from the base allocator
+                allocator_type::destroy( p );
+                allocator_type::deallocate( p, 1 );
             }
-
-
-
 
             /// Analogue of operator delete []
-            void Delete(value_type* p, size_t nCount)
+            void Delete( value_type * p, size_t nCount )
             {
-                for (size_t i = 0; i < nCount; ++i)
-                    allocator_type::destroy(p + i);
-                allocator_type::deallocate(p, nCount);
+                 for ( size_t i = 0; i < nCount; ++i )
+                     allocator_type::destroy( p + i );
+                allocator_type::deallocate( p, nCount );
             }
-
 
 #       if CDS_COMPILER == CDS_COMPILER_INTEL
             //@cond

@@ -27,7 +27,8 @@ ALTER TABLE `account`
 	DROP COLUMN `battlenet_index`,
 	DROP INDEX `bnet_acc`,
 	DROP INDEX `battlenet_account`,
-	DROP INDEX `battlenet_index`;
+	DROP INDEX `battlenet_index`,
+	ROW_FORMAT=COMPRESSED;
 
 ALTER TABLE `account_rates`
 	DROP COLUMN `bnet_account`;

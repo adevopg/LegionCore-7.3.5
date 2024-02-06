@@ -1320,7 +1320,7 @@ class WorldSession
         void HandleGMTicketGetCaseStatus(WorldPackets::Ticket::GMTicketGetCaseStatus& packet);
         void HandleSupportTicketSubmitComplaint(WorldPackets::Ticket::SupportTicketSubmitComplaint& packet);
         void HandleSupportTicketSubmitSuggestion(WorldPackets::Ticket::SupportTicketSubmitSuggestion& packet);
-        void WorldSession::SendTicketStatusUpdate(uint8 p_Response);
+        void SendTicketStatusUpdate(uint8 p_Response);
         void OnGMTicketGetTicketEvent();
 
 
