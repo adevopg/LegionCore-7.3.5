@@ -33976,6 +33976,13 @@ void Player::ActivateTalentGroup(ChrSpecializationEntry const* spec)
     SendDirectMessage(activeGlyphs.Write());
 
     SetGroupUpdateFlag(GROUP_UPDATE_FLAG_SPECIALIZATION_ID);
+	
+	AddDelayedEvent(100, [this]() -> void
+	{
+		PhaseUpdateData phaseUdateData;
+        phaseUdateData.AddConditionType(CONDITION_SPEC_ID);
+        GetPhaseMgr().NotifyConditionChanged(phaseUdateData);
+    });
 
     AddDelayedEvent(500, [this]() -> void
     {
