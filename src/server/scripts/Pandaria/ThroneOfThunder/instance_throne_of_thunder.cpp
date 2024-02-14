@@ -2,8 +2,6 @@
 //Throne of Thunder
 
 #include "throne_of_thunder.h"
-#include <algorithm> 
-#include <random>
 
 const DoorData doorData[] =
 {
@@ -1016,7 +1014,7 @@ public:
             case DATA_LAUNCH_FEED_PLATFORM:
                 if (Creature* jikun = instance->GetCreature(GetGuidData(NPC_JI_KUN)))
                 {
-                    std::list<Player*> pllist;
+                    std::list<Player*>pllist;
                     pllist.clear();
                     GetPlayerListInGrid(pllist, jikun, 50.0f);
                     if (!pllist.empty())
@@ -1036,9 +1034,7 @@ public:
                             for (std::list<Player*>::const_iterator Itr = pllist.begin(); Itr != pllist.end(); Itr++)
                                 _pllist.push_back((*Itr)->GetGUID());
                             pllist.clear();
-
-                            std::shuffle(_pllist.begin(), _pllist.end(), std::default_random_engine(std::random_device()()));
-
+                            std::random_shuffle(_pllist.begin(), _pllist.end());
                             if (_pllist.size() > maxsize)
                                 _pllist.resize(maxsize);
                             for (GuidVector::const_iterator itr = _pllist.begin(); itr != _pllist.end(); itr++)

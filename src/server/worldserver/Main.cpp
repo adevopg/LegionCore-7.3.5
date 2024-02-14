@@ -20,6 +20,15 @@
 /// @{
 /// \file
 
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/io_service.hpp>
+#include <boost/bind/bind.hpp>
+#include <boost/program_options.hpp>
+#include <cds/gc/hp.h>
+#include <cds/init.h>
+#include <google/protobuf/stubs/common.h>
+#include <openssl/crypto.h>
+#include <openssl/opensslv.h>
 
 #include "AsyncAcceptor.h"
 #include "BattlegroundMgr.h"
@@ -28,9 +37,7 @@
 #include "Common.h"
 #include "Configuration/Config.h"
 #include "DatabaseEnv.h"
-#include "DeadlineTimer.h"
 #include "GitRevision.h"
-#include "IoContext.h"
 #include "MapInstanced.h"
 #include "MapManager.h"
 #include "ObjectAccessor.h"
@@ -39,7 +46,6 @@
 #include "ProcessPriority.h"
 #include "RASession.h"
 #include "RealmList.h"
-#include "Resolver.h"
 #include "ScriptLoader.h"
 #include "ScriptMgr.h"
 #include "segvcatch.h"
@@ -49,13 +55,6 @@
 #include "WorldSocket.h"
 #include "WorldSocketMgr.h"
 #include "Banner.h"
-#include <boost/bind/bind.hpp>
-#include <boost/program_options.hpp>
-#include <cds/gc/hp.h>
-#include <cds/init.h>
-#include <google/protobuf/stubs/common.h>
-#include <openssl/crypto.h>
-#include <openssl/opensslv.h>
 
 #ifdef WIN32
 #include <windows.h>
@@ -63,8 +62,6 @@
 #include <pthread.h>
 #include <signal.h>
 #endif
-
-#include "Hacks/boost_program_options_with_filesystem_path.h"
 
 using namespace boost::program_options;
 
@@ -88,8 +85,8 @@ char serviceDescription[] = "LegionCore World of Warcraft emulator world service
 int m_ServiceStatus = -1;
 #endif
 
-Trinity::Asio::IoContext _ioContext;
-Trinity::Asio::DeadlineTimer _freezeCheckTimer(_ioContext);
+boost::asio::io_service _ioService;
+boost::asio::deadline_timer _freezeCheckTimer(_ioService);
 
 std::vector<uint32> _lastMapChangeMsTime;
 std::vector<uint32> _mapLoopCounter;
@@ -104,7 +101,7 @@ uint32 _maxMapStuckTimeInMs(0);
 
 void SignalHandler(const boost::system::error_code& error, int signalNumber);
 void FreezeDetectorHandler(const boost::system::error_code& error);
-AsyncAcceptor* StartRaSocketAcceptor(Trinity::Asio::IoContext& ioContext);
+AsyncAcceptor* StartRaSocketAcceptor(boost::asio::io_service& ioService);
 bool StartDB();
 void StopDB();
 void WorldUpdateLoop();
@@ -182,8 +179,8 @@ extern int main(int argc, char **argv)
     }
 
     // Set signal handlers (this must be done before starting io_service threads, because otherwise they would unblock and exit)
-    boost::asio::signal_set signals(_ioContext, SIGINT, SIGTERM);
-#if PLATFORM == PLATFORM_WINDOWS
+    boost::asio::signal_set signals(_ioService, SIGINT, SIGTERM);
+#if PLATFORM == TC_PLATFORM_WINDOWS
     signals.add(SIGBREAK);
 #endif
     signals.async_wait(SignalHandler);
@@ -196,7 +193,7 @@ extern int main(int argc, char **argv)
         numThreads = 1;
 
     for (int i = 0; i < numThreads; ++i)
-        threadPool.emplace_back(boost::bind(&Trinity::Asio::IoContext::run, &_ioContext));
+        threadPool.emplace_back(boost::bind(&boost::asio::io_service::run, &_ioService));
 
     // Set process priority according to configuration settings
     SetProcessPriority("server.worldserver");
@@ -211,7 +208,7 @@ extern int main(int argc, char **argv)
     // Set server offline (not connectable)
     LoginDatabase.DirectPExecute("UPDATE realmlist SET flag = flag | %u WHERE id = '%d'", REALM_FLAG_OFFLINE, realm.Id.Realm);
    
-    sRealmList->Initialize(_ioContext, sConfigMgr->GetIntDefault("RealmsStateUpdateDelay", 10));
+    sRealmList->Initialize(_ioService, sConfigMgr->GetIntDefault("RealmsStateUpdateDelay", 10));
     LoadRealmInfo();
 
     // Initialize the World
@@ -237,7 +234,7 @@ extern int main(int argc, char **argv)
     // Start the Remote Access port (acceptor) if enabled
     AsyncAcceptor* raAcceptor = nullptr;
     if (sConfigMgr->GetBoolDefault("Ra.Enable", false))
-        raAcceptor = StartRaSocketAcceptor(_ioContext);
+        raAcceptor = StartRaSocketAcceptor(_ioService);
 
     // Start soap serving thread if enabled
     std::thread* soapThread = nullptr;
@@ -256,7 +253,7 @@ extern int main(int argc, char **argv)
         return false;
     }
 
-    sWorldSocketMgr.StartNetwork(_ioContext, worldListener, worldPort, networkThreads);
+    sWorldSocketMgr.StartNetwork(_ioService, worldListener, worldPort, networkThreads);
     // Set server online (allow connecting now)
     LoginDatabase.DirectPExecute("UPDATE realmlist SET flag = flag & ~%u, population = 0 WHERE id = '%u'", REALM_FLAG_OFFLINE, realm.Id.Realm);
     realm.PopulationLevel = 0.0f;
@@ -423,43 +420,46 @@ extern int main(int argc, char **argv)
 
 bool LoadRealmInfo()
 {
-   
-    
+    boost::asio::ip::tcp::resolver resolver(_ioService);
+    boost::asio::ip::tcp::resolver::iterator end;
 
     QueryResult result = LoginDatabase.PQuery("SELECT id, name, address, localAddress, localSubnetMask, port, icon, flag, timezone, allowedSecurityLevel, population, gamebuild, Region, Battlegroup FROM realmlist WHERE id = %u", realm.Id.Realm);
     if (!result)
         return false;
 
-    Trinity::Asio::Resolver resolver(_ioContext);
-
     Field* fields = result->Fetch();
     realm.Name = fields[1].GetString();
-    Optional<boost::asio::ip::tcp::endpoint> externalAddress = resolver.Resolve(boost::asio::ip::tcp::v4(), fields[2].GetString(), "");
-    if (!externalAddress)
+    boost::asio::ip::tcp::resolver::query externalAddressQuery(tcp::v4(), fields[2].GetString(), "", boost::asio::ip::resolver_query_base::all_matching);
+
+    boost::system::error_code ec;
+    boost::asio::ip::tcp::resolver::iterator endPoint = resolver.resolve(externalAddressQuery, ec);
+    if (endPoint == end || ec)
     {
         TC_LOG_ERROR(LOG_FILTER_WORLDSERVER, "Could not resolve address %s", fields[2].GetString().c_str());
         return false;
     }
 
-    realm.ExternalAddress = Trinity::make_unique<boost::asio::ip::address>(externalAddress->address());
+    realm.ExternalAddress = Trinity::make_unique<boost::asio::ip::address>((*endPoint).endpoint().address());
 
-    Optional<boost::asio::ip::tcp::endpoint> localAddress = resolver.Resolve(boost::asio::ip::tcp::v4(), fields[3].GetString(), "");
-    if (!localAddress)
+    boost::asio::ip::tcp::resolver::query localAddressQuery(tcp::v4(), fields[3].GetString(), "", boost::asio::ip::resolver_query_base::all_matching);
+    endPoint = resolver.resolve(localAddressQuery, ec);
+    if (endPoint == end || ec)
     {
         TC_LOG_ERROR(LOG_FILTER_WORLDSERVER, "Could not resolve address %s", fields[3].GetString().c_str());
         return false;
     }
 
-    realm.LocalAddress = Trinity::make_unique<boost::asio::ip::address>(localAddress->address());
+    realm.LocalAddress = Trinity::make_unique<boost::asio::ip::address>((*endPoint).endpoint().address());
 
-    Optional<boost::asio::ip::tcp::endpoint> localSubmask = resolver.Resolve(boost::asio::ip::tcp::v4(), fields[4].GetString(), "");
-    if (!localSubmask)
+    boost::asio::ip::tcp::resolver::query localSubmaskQuery(tcp::v4(), fields[4].GetString(), "", boost::asio::ip::resolver_query_base::all_matching);
+    endPoint = resolver.resolve(localSubmaskQuery, ec);
+    if (endPoint == end || ec)
     {
         TC_LOG_ERROR(LOG_FILTER_WORLDSERVER, "Could not resolve address %s", fields[4].GetString().c_str());
         return false;
     }
 
-    realm.LocalSubnetMask = Trinity::make_unique<boost::asio::ip::address>(localSubmask->address());
+    realm.LocalSubnetMask = Trinity::make_unique<boost::asio::ip::address>((*endPoint).endpoint().address());
 
     realm.Port = fields[5].GetUInt16();
     realm.Type = fields[6].GetUInt8();
@@ -475,7 +475,7 @@ bool LoadRealmInfo()
 
 void ShutdownThreadPool(std::vector<std::thread>& threadPool)
 {
-    _ioContext.stop();
+    _ioService.stop();
 
     for (auto& thread : threadPool)
         thread.join();
@@ -665,12 +665,12 @@ void FreezeDetectorHandler(const boost::system::error_code& error)
     }
 }
 
-AsyncAcceptor* StartRaSocketAcceptor(Trinity::Asio::IoContext& ioContext)
+AsyncAcceptor* StartRaSocketAcceptor(boost::asio::io_service& ioService)
 {
     uint16 raPort = uint16(sConfigMgr->GetIntDefault("Ra.Port", 3443));
     std::string raListener = sConfigMgr->GetStringDefault("Ra.IP", "0.0.0.0");
 
-    AsyncAcceptor* acceptor = new AsyncAcceptor(ioContext, raListener, raPort);
+    AsyncAcceptor* acceptor = new AsyncAcceptor(ioService, raListener, raPort);
     acceptor->AsyncAccept<RASession>();
     return acceptor;
 }

@@ -25,6 +25,10 @@ list(APPEND PRIVATE_SOURCES
 
 if (USE_COREPCH)
   set(PRIVATE_PCH_HEADER PrecompiledHeaders/commonPCH.h)
+  set(PRIVATE_PCH_SOURCE PrecompiledHeaders/commonPCH.cpp)
+  if (MSVC)
+    list(INSERT PRIVATE_SOURCES 0 PrecompiledHeaders/commonPCH.cpp)
+  endif (MSVC)
 endif (USE_COREPCH)
 
 GroupSources(${CMAKE_CURRENT_SOURCE_DIR})
@@ -60,7 +64,6 @@ target_link_libraries(common
   PRIVATE
     process
   PUBLIC
-    trinity-core-interface
     mysql
     cds
     boost
@@ -82,5 +85,5 @@ set_target_properties(common
 
 # Generate precompiled header
 if (USE_COREPCH)
-  add_cxx_pch(common ${PRIVATE_PCH_HEADER})
+  add_cxx_pch(common ${PRIVATE_PCH_HEADER} ${PRIVATE_PCH_SOURCE})
 endif ()

@@ -18,13 +18,13 @@
 #ifndef LoginRESTService_h__
 #define LoginRESTService_h__
 
-#include "IoContext.h"
-#include "IpAddress.h"
 #include "Session.h"
 #include "Define.h"
 #include "Login.pb.h"
+#include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include "DeadlineTimer.h"
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/deadline_timer.hpp>
 #include <atomic>
 #include <mutex>
 #include <thread>
@@ -35,11 +35,11 @@ struct soap_plugin;
 class LoginRESTService
 {
 public:
-    LoginRESTService() : _ioContext(nullptr), _stopped(false), _port(0), _loginTicketCleanupTimer(nullptr) { }
+    LoginRESTService() : _stopped(false), _port(0), _loginTicketCleanupTimer(nullptr) { }
 
     static LoginRESTService& Instance();
 
-    bool Start(Trinity::Asio::IoContext& ioContext);
+    bool Start(boost::asio::io_service& ioService);
     void Stop();
 
     boost::asio::ip::tcp::endpoint const& GetAddressForClient(boost::asio::ip::address const& address) const;
@@ -98,7 +98,6 @@ private:
         char const* ContentType;
     };
 
-    Trinity::Asio::IoContext* _ioContext;
     std::thread _thread;
     std::atomic<bool> _stopped;
     Battlenet::JSON::Login::FormInputs _formInputs;
@@ -107,10 +106,9 @@ private:
     int32 _waitTime;
     boost::asio::ip::tcp::endpoint _externalAddress;
     boost::asio::ip::tcp::endpoint _localAddress;
-    boost::asio::ip::address_v4 _localNetmask;
     std::mutex _loginTicketMutex;
     std::unordered_map<std::string, LoginTicket> _validLoginTickets;
-    Trinity::Asio::DeadlineTimer* _loginTicketCleanupTimer;
+    boost::asio::deadline_timer* _loginTicketCleanupTimer;
 };
 
 #define sLoginService LoginRESTService::Instance()

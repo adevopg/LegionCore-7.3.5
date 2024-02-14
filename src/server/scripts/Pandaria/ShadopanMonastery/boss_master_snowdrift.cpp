@@ -2,8 +2,6 @@
 ==============*/
 
 #include "shadopan_monastery.h"
-#include <algorithm> 
-#include <random> 
 
 enum eSay
 {
@@ -388,7 +386,7 @@ struct boss_master_snowdrift : public BossAI
             {
                 std::vector<uint8> randomIndex;
                 for (int i = 0; i < 3; ++i) randomIndex.push_back(i);
-                std::shuffle(randomIndex.begin(), randomIndex.end(), std::default_random_engine(std::random_device()()));
+                std::random_shuffle(randomIndex.begin(), randomIndex.end());
 
                 bool isBoss = true;
 

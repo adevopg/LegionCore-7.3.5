@@ -25,7 +25,7 @@
 #include "Errors.h" // for ASSERT
 #include <cstdarg>
 #include "StringFormat.h"
-#include "IpAddress.h"
+#include <boost/asio/ip/address.hpp>
 
 #if COMPILER == COMPILER_GNU
 #include <sys/socket.h>
@@ -219,7 +219,7 @@ bool IsIPAddress(char const* ipaddress)
         return false;
 
     boost::system::error_code error;
-    Trinity::Net::make_address(ipaddress, error);
+    boost::asio::ip::address::from_string(ipaddress, error);
     return !error;
 }
 

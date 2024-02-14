@@ -18,8 +18,6 @@
 
 #include "siege_of_orgrimmar.h"
 #include "PlayerDefines.h"
-#include <algorithm>
-#include <random> 
 
 enum eSpells
 {
@@ -619,7 +617,7 @@ public:
                 case EVENT_SAWBLADE:
                 {
                     bool havetarget = false;
-                    std::vector<ObjectGuid> _pllist;
+                    std::vector<ObjectGuid>_pllist;
                     _pllist.clear();
                     std::list<HostileReference*> ThreatList = me->getThreatManager().getThreatList();
                     if (!ThreatList.empty())
@@ -630,7 +628,7 @@ public:
 
                     if (!_pllist.empty())
                     {
-                        std::shuffle(_pllist.begin(), _pllist.end(), std::default_random_engine(std::random_device()()));
+                        std::random_shuffle(_pllist.begin(), _pllist.end());
                         for (std::vector<ObjectGuid>::const_iterator itr = _pllist.begin(); itr != _pllist.end(); itr++)
                         {
                             if (Player* pl = me->GetPlayer(*me, *itr))

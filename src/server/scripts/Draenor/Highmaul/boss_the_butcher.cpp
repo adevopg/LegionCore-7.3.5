@@ -7,8 +7,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 # include "highmaul.hpp"
-#include <algorithm>
-#include <random>
 
 Position const g_MaggotSpawnPos[MaxMaggotToKill] =
 {
@@ -391,7 +389,7 @@ struct boss_the_butcher : public BossAI
         if (action == MaggotKilled)
         {
             std::vector<uint8> indexes = {0, 1, 2, 3, 4, 5};
-            std::shuffle(indexes.begin(), indexes.end(), std::default_random_engine(std::random_device()()));
+            std::random_shuffle(indexes.begin(), indexes.end());
 
             for (uint8 i : indexes)
             {

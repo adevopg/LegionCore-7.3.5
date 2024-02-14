@@ -16,6 +16,7 @@ CollectSourceFiles(
 
 if (USE_COREPCH)
   set(PRIVATE_PCH_HEADER PrecompiledHeaders/sharedPCH.h)
+  set(PRIVATE_PCH_SOURCE PrecompiledHeaders/sharedPCH.cpp)
 endif()
 
 GroupSources(${CMAKE_CURRENT_SOURCE_DIR})
@@ -65,5 +66,5 @@ set_target_properties(shared
 
 # Generate precompiled header
 if (USE_COREPCH)
-  add_cxx_pch(shared ${PRIVATE_PCH_HEADER})
+  add_cxx_pch(shared ${PRIVATE_PCH_HEADER} ${PRIVATE_PCH_SOURCE})
 endif ()
