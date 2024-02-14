@@ -17,6 +17,8 @@
  */
 
 #include "siege_of_orgrimmar.h"
+#include <algorithm>
+#include <random>
 
 enum eSpells
 {
@@ -602,9 +604,9 @@ class boss_thok_the_bloodthirsty : public CreatureScript
             ObjectGuid GetFixateTargetGuid()
             {
                 ObjectGuid jvGuid = GetJailerVictimGuid();
-                std::vector<ObjectGuid>_pllist;
+                std::vector<ObjectGuid> _pllist;
                 _pllist.clear();
-                std::list<HostileReference*>ThreatList = me->getThreatManager().getThreatList();
+                std::list<HostileReference*> ThreatList = me->getThreatManager().getThreatList();
                 if (!ThreatList.empty())
                 {
                     for (std::list<HostileReference*>::const_iterator itr = ThreatList.begin(); itr != ThreatList.end(); itr++)
@@ -615,7 +617,7 @@ class boss_thok_the_bloodthirsty : public CreatureScript
 
                     if (!_pllist.empty())
                     {
-                        std::random_shuffle(_pllist.begin(), _pllist.end());
+                        std::shuffle(_pllist.begin(), _pllist.end(), std::default_random_engine(std::random_device()()));
                         std::vector<ObjectGuid>::const_iterator itr = _pllist.begin();
                         std::advance(itr, urand(0, _pllist.size() - 1));
                         return *itr;

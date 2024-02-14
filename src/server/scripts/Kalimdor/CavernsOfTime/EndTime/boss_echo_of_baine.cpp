@@ -162,26 +162,23 @@ class boss_echo_of_baine : public CreatureScript
                 DoMeleeAttackIfReady();
             }
         private:
-            struct PositionSelector : public std::unary_function<Unit*, bool>
+            struct PositionSelector
             {
-                public:
-                    bool operator()(Unit const* target) const
-                    {
-                        if (!target->IsPlayer())
-                            return false;
+                bool operator()(Unit const* target) const
+                {
+                    if (!target->IsPlayer())
+                        return false;
 
-                        if (target->GetAreaId() != AREA_OBSIDIAN)
-                            return false;
+                    if (target->GetAreaId() != AREA_OBSIDIAN)
+                        return false;
 
-                        if (target->IsInWater())
-                            return false;
+                    if (target->IsInWater())
+                        return false;
 
-                        return true;
-                    }
-                private:
-                    bool _b;
+                    return true;
+                }
             };
-        };      
+    };
 };
 
 struct npc_echo_of_baine_baines_totem : public Scripted_NoMovementAI
