@@ -18,7 +18,7 @@ If you want you can join the community discord: [here](https://discord.gg/uaP2ae
 # Requirements
  
  ### Important
- The main difference to note is that LegionCore requires Boost (1.74.0), Visual Studio 2022 or later, and MySQL (8.3.0).
+ The main difference to note is that LegionCore requires Boost (1.64.0), Visual Studio 2017 or later, and MySQL (5.6.51).
  
 [Windows specific](https://www.trinitycore.info/en/install/requirements/windows)
   
