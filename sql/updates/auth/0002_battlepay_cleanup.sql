@@ -1,3 +1,4 @@
+SET sql_mode = 'STRICT_TRANS_TABLES';
 DROP TABLE `store_statistics`;
 DROP TABLE `store_history`;
 
